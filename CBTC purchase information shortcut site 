@@ -1,0 +1,194 @@
+// Versión extendida con más características
+class ColoredBitcoinApp {
+  constructor() {
+    this.btcPrice = 0;
+    this.lastUpdated = null;
+    this.elements = {
+      price: document.querySelector('.price-highlight'),
+      satoshi: document.querySelector('.satoshi-reference span'),
+      lastUpdated: document.createElement('div')
+    };
+    
+    this.init();
+  }
+  
+  init() {
+    this.setupUI();
+    this.fetchPriceData();
+    this.setupEventListeners();
+    this.checkTelegramIntegration();
+  }
+  
+  setupUI() {
+    // Añadir elemento de última actualización
+    this.elements.lastUpdated.className = 'last-updated';
+    document.querySelector('.info-card').appendChild(this.elements.lastUpdated);
+    
+    // Crear botón de refresh
+    this.refreshBtn = document.createElement('button');
+    this.refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
+    this.refreshBtn.className = 'btn refresh-btn';
+    document.querySelector('.info-card h3').appendChild(this.refreshBtn);
+  }
+  
+  async fetchPriceData() {
+    try {
+      this.setLoadingState(true);
+      
+  //document.addEventListener('DOMContentLoaded', async function() {
+  // Elementos del DOM
+  const btcPriceElement = document.getElementById('btc-price');
+  const coloredRatioElement = document.getElementById('colored-ratio');
+  const coloredPriceElement = document.getElementById('colored-price');
+  const lastUpdatedElement = document.getElementById('last-updated');
+
+  // Actualizar precios
+  async function updatePrices() {
+    try {
+      // 1. Obtener precio de Bitcoin
+      const btcPrice = await getBinancePrice();
+      
+      // 2. Obtener ratio •BTC•/BTC
+      const coloredData = await getColoredBitcoinRatio();
+      
+      // 3. Calcular precios
+      const coloredBtcPrice = coloredData.ratio;
+      const coloredUsdPrice = btcPrice * coloredData.ratio;
+      
+      // 4. Actualizar UI
+      btcPriceElement.textContent = btcPrice.toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      });
+      
+      coloredRatioElement.textContent = coloredBtcPrice.toFixed(6);
+      
+      coloredPriceElement.textContent = coloredUsdPrice.toLocaleString('en-US', {
+        style: 'currency', 
+        currency: 'USD'
+      });
+      
+      lastUpdatedElement.textContent = new Date().toLocaleTimeString();
+      
+      // 5. Actualizar cada 30 segundos
+      setTimeout(updatePrices, 30000);
+      
+    } catch (error) {
+      console.error("Error updating prices:", error);
+      // Reintentar después de 10 segundos si hay error
+      setTimeout(updatePrices, 10000);
+    }
+  }
+
+  // Iniciar
+  updatePrices();
+});
+      
+      this.updatePriceData(mockData);
+      
+    } catch (error) {
+      console.error('Error:', error);
+      this.showErrorState();
+    } finally {
+      this.setLoadingState(false);
+    }
+  }
+  
+  updatePriceData(data) {
+    this.btcPrice = data.btcPrice;
+    this.lastUpdated = data.lastUpdated;
+    
+    this.updatePriceDisplay();
+    this.saveToLocalStorage();
+  }
+  
+  updatePriceDisplay() {
+    const satoshis = Math.round(this.btcPrice * 100000000);
+    
+    this.elements.price.textContent = `${this.btcPrice.toFixed(6)} BTC`;
+    this.elements.satoshi.textContent = `${satoshis.toLocaleString()} satoshis`;
+    this.elements.lastUpdated.textContent = `Actualizado: ${this.lastUpdated.toLocaleTimeString()}`;
+    
+    this.animatePriceChange();
+  }
+  
+  animatePriceChange() {
+    this.elements.price.style.transition = 'all 0.3s';
+    this.elements.price.style.transform = 'scale(1.1)';
+    this.elements.price.style.color = '#ffd700';
+    
+    setTimeout(() => {
+      this.elements.price.style.transform = 'scale(1)';
+      this.elements.price.style.color = '#f7931a';
+    }, 300);
+  }
+  
+  setLoadingState(isLoading) {
+    if (isLoading) {
+      this.elements.price.textContent = 'Cargando...';
+      this.refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando';
+      this.refreshBtn.disabled = true;
+    } else {
+      this.refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
+      this.refreshBtn.disabled = false;
+    }
+  }
+  
+  showErrorState() {
+    this.elements.price.textContent = 'Error';
+    this.elements.satoshi.textContent = '---';
+    this.elements.lastUpdated.textContent = 'Error al cargar datos';
+  }
+  
+  saveToLocalStorage() {
+    localStorage.setItem('lastBTCPrice', JSON.stringify({
+      price: this.btcPrice,
+      timestamp: this.lastUpdated.getTime()
+    }));
+  }
+  
+  loadFromLocalStorage() {
+    const savedData = localStorage.getItem('lastBTCPrice');
+    if (savedData) {
+      const { price, timestamp } = JSON.parse(savedData);
+      this.updatePriceData({
+        btcPrice: price,
+        lastUpdated: new Date(timestamp)
+      });
+    }
+  }
+  
+  setupEventListeners() {
+    this.refreshBtn.addEventListener('click', () => this.fetchPriceData());
+    
+    // Actualización automática cada 30 segundos
+    setInterval(() => this.fetchPriceData(), 30000);
+    
+    // Cargar datos guardados al inicio
+    this.loadFromLocalStorage();
+  }
+  
+  checkTelegramIntegration() {
+    if (window.Telegram && window.Telegram.WebApp) {
+      this.setupTelegramFeatures();
+    }
+  }
+  
+  setupTelegramFeatures() {
+    const tgWebApp = window.Telegram.WebApp;
+    tgWebApp.expand();
+    
+    // Añadir botón especial de Telegram
+    const tgBtn = document.createElement('a');
+    tgBtn.href = 'https://t.me/coloredbitcoin21';
+    tgBtn.className = 'btn telegram-btn';
+    tgBtn.innerHTML = '<i class="fab fa-telegram"></i> Canal Oficial';
+    document.querySelector('.info-card').appendChild(tgBtn);
+    
+    // Ajustar UI para Telegram
+    document.body.classList.add('telegram-webapp');
+  }
+}
+
+// Inicializar la aplicación
+new ColoredBitcoinApp();
